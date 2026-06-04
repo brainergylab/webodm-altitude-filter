@@ -23,9 +23,13 @@ module.exports = {
   entry: {"AltitudeFilterPanel": ["./AltitudeFilterPanel.jsx"]},
 
   output: {
-      path: path.join(__dirname, './build'),
-      filename: "[name].js",
-      libraryTarget: "amd"
+    path: path.join(__dirname, './build'),
+    filename: "[name].js",
+    // Named AMD bundle — compatible with WebODM's SystemJS 0.21 (anonymous define() breaks)
+    library: {
+      type: 'amd',
+      name: '[name]'
+    }
   },
 
   plugins: [
@@ -78,12 +82,14 @@ module.exports = {
     modules: [path.join(webodmRoot, 'node_modules')]
   },
 
+  externalsType: 'amd',
   externals: {
     "jquery": "jQuery",
     "SystemJS": "SystemJS",
     "PluginsAPI": "PluginsAPI",
-    "ReactDOM": "ReactDOM",
-    "React": "React"
+    "react-dom": "ReactDOM",
+    "react": "React",
+    "prop-types": "PropTypes"
   },
 
   watchOptions: {

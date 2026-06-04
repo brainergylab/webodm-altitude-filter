@@ -56,6 +56,14 @@ Copy this directory into WebODM’s persistent plugins path (typically `app/medi
 
 **Requirements for the histogram:** at least **two** images with **GPS altitude** in EXIF. Images without altitude are always kept. If you only see a text message, your images may lack GPS altitude metadata (common with some cameras or stripped EXIF).
 
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Console: `define is not a function` when loading `AltitudeFilterPanel.js` | Rebuild `public/build/` with the repo’s `webpack.config.js` (named AMD output). Do not use anonymous `define(() => …)` bundles from older webpack settings. |
+| No **Altitude** row at all | Enable the plugin, hard-refresh the page, confirm `main.js` loads under `/plugins/<folder>/main.js`. |
+| Message instead of histogram | Need ≥2 images with GPS altitude in EXIF. |
+
 ## Development
 
 From `public/`:
