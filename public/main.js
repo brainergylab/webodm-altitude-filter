@@ -1,32 +1,13 @@
-(function(){
-  function getPluginPrefix(){
-    const script = document.currentScript;
-    if (script && script.src){
-      const m = script.src.match(/\/plugins\/([^/]+)\/main\.js(?:\?|#|$)/);
-      if (m) return m[1] + '/';
-    }
-    const scripts = document.getElementsByTagName('script');
-    for (let i = scripts.length - 1; i >= 0; i--){
-      const m = (scripts[i].src || '').match(/\/plugins\/([^/]+)\/main\.js(?:\?|#|$)/);
-      if (m) return m[1] + '/';
-    }
-    return '';
+// Panel bundle is a plain <script> (plugin.py include_js_files), not SystemJS.
+// SystemJS fetch often 404s for uploaded plugins even when the same URL works in the browser.
+PluginsAPI.Dashboard.addNewTaskPanelItem(function(args){
+  const exp = window.AltitudeFilterPanel;
+  if (!exp){
+    console.error('[Altitude Filter] window.AltitudeFilterPanel is missing. Check that build/AltitudeFilterPanel.js is deployed and listed before main.js in include_js_files().');
+    return null;
   }
-
-  const prefix = getPluginPrefix();
-  if (!prefix){
-    console.error('[Altitude Filter] Could not detect plugin install path from main.js URL. The altitude panel will not load.');
-    return;
-  }
-
-  // CSS is loaded via plugin.py include_css_files() (<link> in page head).
-  // Do not load .css through SystemJS — it often 404s or fails for uploaded plugins.
-  PluginsAPI.Dashboard.addNewTaskPanelItem([
-    prefix + 'build/AltitudeFilterPanel.js'
-  ], function(args, AltitudeFilterPanel){
-    return AltitudeFilterPanel;
-  });
-})();
+  return exp.default || exp;
+});
 
 (function(){
   if (!window.Dropzone) return;

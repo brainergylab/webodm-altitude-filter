@@ -25,10 +25,10 @@ module.exports = {
   output: {
     path: path.join(__dirname, './build'),
     filename: "[name].js",
-    // Named AMD, empty deps array — SystemJS must not fetch React/PropTypes as /plugins/* URLs
+    // Global var — loaded via <script> in include_js_files(), not SystemJS
     library: {
-      type: 'amd',
-      name: '[name]'
+      type: 'var',
+      name: 'AltitudeFilterPanel'
     }
   },
 
@@ -82,8 +82,6 @@ module.exports = {
     modules: [path.join(webodmRoot, 'node_modules')]
   },
 
-  // Use globals already on the page (WebODM main bundle). Do not use externalsType
-  // 'amd' — that makes SystemJS fetch /plugins/React and /plugins/PropTypes (404).
   externalsType: 'var',
   externals: {
     "jquery": "jQuery",
