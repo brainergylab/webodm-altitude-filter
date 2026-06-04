@@ -213,7 +213,13 @@ export default class AltitudeFilterPanel extends React.Component {
       rangeMin,
       rangeMax,
       ...counts
-    });
+    }, this.notifyMapPreview);
+  };
+
+  notifyMapPreview = () => {
+    if (window.AltitudeFilter && window.AltitudeFilter.refreshMapPreview){
+      window.AltitudeFilter.refreshMapPreview();
+    }
   };
 
   handleHistogramUpdate = ({ min, max }) => {
@@ -222,7 +228,7 @@ export default class AltitudeFilterPanel extends React.Component {
       rangeMin: min,
       rangeMax: max,
       ...counts
-    });
+    }, this.notifyMapPreview);
   };
 
   render(){
@@ -261,7 +267,7 @@ export default class AltitudeFilterPanel extends React.Component {
       <div className="altitude-filter-panel">
         <label className="col-sm-2 control-label">{_("Altitude")}</label>
         <div className="col-sm-10 panel-body">
-          <p className="text-muted">{_("Drag the sliders on the histogram to exclude images outside the altitude range.")}</p>
+          <p className="text-muted">{_("Drag the sliders on the histogram to exclude images outside the altitude range. The map preview above updates to match.")}</p>
           {noneIncluded ? (
             <div className="alert alert-warning altitude-filter-warning">
               {_("No images fall within the selected altitude range. Adjust the sliders before starting processing.")}

@@ -104,5 +104,82 @@ PluginsAPI.Dashboard.addNewTaskPanelItem(function(args){
     return origProcessQueue.apply(this, arguments);
   };
 
-  window.AltitudeFilter = { applyBeforeUpload };
+  function findMapPreview(){
+    const dz = window.Dropzone && window.Dropzone.instances &&
+      window.Dropzone.instances.find(d => (
+        d.options.autoProcessQueue === false && d.files.length > 0
+      ));
+    if (!dz || !dz.element) return null;
+
+    const stack = [];
+    let el = dz.element;
+    while (el){
+      const key = Object.keys(el).find(k => (
+        k.startsWith('__reactFiber$') ||
+        k.startsWith('__reactInternalInstance$')
+      ));
+      if (key) stack.push(el[key]);
+      el = el.parentElement;
+    }
+
+    while (stack.length){
+      const fiber = stack.pop();
+      if (!fiber) continue;
+      const node = fiber.stateNode;
+      if (node && typeof node.loadNewFiles === 'function' && node.map){
+        return node;
+      }
+      if (fiber.child) stack.push(fiber.child);
+      if (fiber.sibling) stack.push(fiber.sibling);
+    }
+    return null;
+  }
+
+  function applyMapAltitudeFilter(mapPreview){
+    if (!mapPreview || !mapPreview.imagesGroup) return;
+
+    mapPreview.imagesGroup.eachLayer(layer => {
+      const name = layer.feature &&
+        layer.feature.properties &&
+        layer.feature.properties.Filename;
+      const file = name && mapPreview.exifData &&
+        mapPreview.exifData.find(ed => ed.image && ed.image.name === name);
+      if (file && file.image && file.image._altitudeExcluded){
+        mapPreview.imagesGroup.removeLayer(layer);
+      }
+    });
+
+    if (mapPreview.capturePath && mapPreview.hasTimestamp && window.L){
+      mapPreview.map.removeLayer(mapPreview.capturePath);
+      const included = (mapPreview.exifData || []).filter(ed => (
+        ed.image && !ed.image._altitudeExcluded
+      ));
+      const coords = included.map(ed => [ed.gps.latitude, ed.gps.longitude]);
+      mapPreview.capturePath = coords.length > 1 ?
+        window.L.polyline(coords, { color: '#4b96f3', weight: 3 }) :
+        null;
+      if (mapPreview.capturePath) mapPreview.capturePath.addTo(mapPreview.map);
+    }
+
+    const layers = mapPreview.imagesGroup.getLayers();
+    if (layers.length) mapPreview.map.fitBounds(mapPreview.imagesGroup.getBounds());
+  }
+
+  let mapRefreshTimer = null;
+  function refreshMapPreview(){
+    if (mapRefreshTimer) clearTimeout(mapRefreshTimer);
+    mapRefreshTimer = setTimeout(() => {
+      mapRefreshTimer = null;
+      const mapPreview = findMapPreview();
+      if (!mapPreview) return;
+      const result = mapPreview.loadNewFiles();
+      if (result && typeof result.then === 'function'){
+        result.then(() => applyMapAltitudeFilter(mapPreview));
+      } else {
+        applyMapAltitudeFilter(mapPreview);
+      }
+    }, 200);
+  }
+
+  window.AltitudeFilter = { applyBeforeUpload, refreshMapPreview };
 })();
