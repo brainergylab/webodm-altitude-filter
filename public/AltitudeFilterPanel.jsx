@@ -9,9 +9,27 @@ const EXIF_OPTIONS = {
   ifd0: false,
   exif: [0x9003],
   gps: [0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006],
+  xmp: true,
   interop: false,
   ifd1: false
 };
+
+function isRadiometricPanelMode(taskInfo){
+  const opts = taskInfo && taskInfo.options;
+  if (!Array.isArray(opts)) return false;
+  const rc = opts.find(o => o.name === 'radiometric-calibration');
+  return rc && String(rc.value) === 'camera+panel';
+}
+
+/** MicaSense / ODM: Camera:PanelSerial or Camera:CalibrationPicture == 2 */
+function detectPanelCalibration(exif){
+  if (!exif) return false;
+  const serial = exif.PanelSerial ?? exif.panel_serial;
+  if (serial !== undefined && serial !== null && String(serial).trim() !== '') return true;
+  const cal = exif.CalibrationPicture;
+  if (cal === 2 || cal === '2') return true;
+  return false;
+}
 
 function getActiveDropzone(){
   if (!window.Dropzone || !window.Dropzone.instances) return null;
@@ -83,13 +101,22 @@ function buildStatistics(altitudes){
   };
 }
 
-function applyExclusion(imageData, min, max){
+function applyExclusion(imageData, min, max, panelMode){
   let excluded = 0;
   let included = 0;
   let noAltitude = 0;
+  let panelKept = 0;
 
   imageData.forEach(entry => {
     const { file, altitude } = entry;
+
+    if (panelMode && file._isPanelCalibration){
+      file._altitudeExcluded = false;
+      included++;
+      panelKept++;
+      return;
+    }
+
     if (altitude === null){
       file._altitudeExcluded = false;
       noAltitude++;
@@ -103,7 +130,7 @@ function applyExclusion(imageData, min, max){
     else included++;
   });
 
-  return { excluded, included, noAltitude };
+  return { excluded, included, noAltitude, panelKept };
 }
 
 export default class AltitudeFilterPanel extends React.Component {
@@ -125,7 +152,8 @@ export default class AltitudeFilterPanel extends React.Component {
       rangeMax: null,
       excluded: 0,
       included: 0,
-      noAltitude: 0
+      noAltitude: 0,
+      panelKept: 0
     };
   }
 
@@ -134,7 +162,11 @@ export default class AltitudeFilterPanel extends React.Component {
   }
 
   componentDidUpdate(prevProps){
-    if (prevProps.filesCount !== this.props.filesCount){
+    const radiometricChanged = (
+      isRadiometricPanelMode(prevProps.taskInfo) !==
+      isRadiometricPanelMode(this.props.taskInfo)
+    );
+    if (prevProps.filesCount !== this.props.filesCount || radiometricChanged){
       this.loadAltitudes();
     }
   }
@@ -173,10 +205,12 @@ export default class AltitudeFilterPanel extends React.Component {
       exifr.parse(file, EXIF_OPTIONS).then(exif => {
         const altitude = parseAltitude(exif);
         file._altitudeParsed = altitude;
+        file._isPanelCalibration = detectPanelCalibration(exif);
         imageData.push({ file, altitude });
         doneOne();
       }).catch(() => {
         file._altitudeParsed = null;
+        file._isPanelCalibration = false;
         imageData.push({ file, altitude: null });
         doneOne();
       });
@@ -184,26 +218,36 @@ export default class AltitudeFilterPanel extends React.Component {
   };
 
   finishLoading = imageData => {
-    const withAltitude = imageData.filter(e => e.altitude !== null);
-    if (withAltitude.length < 2){
-      imageData.forEach(e => { e.file._altitudeExcluded = false; });
+    const panelMode = isRadiometricPanelMode(this.props.taskInfo);
+    const surveyWithAltitude = imageData.filter(e => (
+      e.altitude !== null && !e.file._isPanelCalibration
+    ));
+
+    if (surveyWithAltitude.length < 2){
+      const counts = applyExclusion(imageData, 0, 0, panelMode);
+      imageData.forEach(e => {
+        if (!panelMode || !e.file._isPanelCalibration) e.file._altitudeExcluded = false;
+      });
       this.setState({
         loading: false,
         statistics: null,
         imageData,
-        error: withAltitude.length === 0 ?
+        rangeMin: null,
+        rangeMax: null,
+        error: surveyWithAltitude.length === 0 ?
           _("No GPS altitude found in image EXIF data.") :
-          _("At least two images with GPS altitude are required for filtering.")
-      });
+          _("At least two non-panel images with GPS altitude are required for filtering."),
+        ...counts
+      }, this.notifyMapPreview);
       return;
     }
 
-    const altitudes = withAltitude.map(e => e.altitude);
+    const altitudes = surveyWithAltitude.map(e => e.altitude);
     const statistics = buildStatistics(altitudes);
     const band = statistics["1"];
     const rangeMin = band.min;
     const rangeMax = band.max;
-    const counts = applyExclusion(imageData, rangeMin, rangeMax);
+    const counts = applyExclusion(imageData, rangeMin, rangeMax, panelMode);
 
     this.setState({
       loading: false,
@@ -223,7 +267,12 @@ export default class AltitudeFilterPanel extends React.Component {
   };
 
   handleHistogramUpdate = ({ min, max }) => {
-    const counts = applyExclusion(this.state.imageData, min, max);
+    const counts = applyExclusion(
+      this.state.imageData,
+      min,
+      max,
+      isRadiometricPanelMode(this.props.taskInfo)
+    );
     this.setState({
       rangeMin: min,
       rangeMax: max,
@@ -232,7 +281,8 @@ export default class AltitudeFilterPanel extends React.Component {
   };
 
   render(){
-    const { loading, error, statistics, rangeMin, rangeMax, excluded, included, noAltitude, imageData } = this.state;
+    const { loading, error, statistics, rangeMin, rangeMax, excluded, included, noAltitude, panelKept, imageData } = this.state;
+    const panelMode = isRadiometricPanelMode(this.props.taskInfo);
 
     if (loading){
       return (
@@ -289,6 +339,11 @@ export default class AltitudeFilterPanel extends React.Component {
             {noAltitude > 0 ? (
               <span> {" "}
                 {interpolate(_("%(count)s without altitude are always included."), { count: noAltitude })}
+              </span>
+            ) : ""}
+            {panelMode && panelKept > 0 ? (
+              <span> {" "}
+                {interpolate(_("%(count)s calibration panel image(s) always included (radiometric calibration: camera+panel)."), { count: panelKept })}
               </span>
             ) : ""}
           </div>

@@ -35,7 +35,7 @@ PluginsAPI.Dashboard.addNewTaskPanelItem(function(args){
   }
 
   function applyBeforeUpload(dz){
-    const excluded = dz.files.filter(f => f._altitudeExcluded);
+    const excluded = dz.files.filter(f => f._altitudeExcluded && !f._isPanelCalibration);
     if (!excluded.length) return true;
 
     const imagesAfter = dz.files.filter(f => (
