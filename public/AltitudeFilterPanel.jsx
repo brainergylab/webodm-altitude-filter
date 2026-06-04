@@ -21,10 +21,27 @@ function getActiveDropzone(){
   ));
 }
 
+function isImageFile(file){
+  if (file.type && file.type.indexOf('image') === 0) return true;
+  const name = (file.name || '').toLowerCase();
+  return /\.(jpe?g|png|tif{1,2}|dng|nef|raw)$/.test(name);
+}
+
 function getImageFiles(getFiles){
   const dz = getActiveDropzone();
-  const files = dz ? dz.files : (getFiles ? getFiles() : []);
-  return Array.from(files).filter(f => f.type && f.type.indexOf('image') === 0);
+  const files = (dz && dz.files.length) ? dz.files : (getFiles ? getFiles() : []);
+  return Array.from(files).filter(isImageFile);
+}
+
+function parseAltitude(exif){
+  if (!exif) return null;
+  if (exif.GPSAltitude !== undefined && exif.GPSAltitude !== null){
+    let altitude = exif.GPSAltitude;
+    if (exif.GPSAltitudeRef === 1) altitude = -altitude;
+    return altitude;
+  }
+  if (exif.altitude !== undefined && exif.altitude !== null) return exif.altitude;
+  return null;
 }
 
 function buildStatistics(altitudes){
@@ -130,7 +147,9 @@ export default class AltitudeFilterPanel extends React.Component {
         loading: false,
         statistics: null,
         imageData: [],
-        error: ""
+        error: this.props.filesCount > 0 ?
+          _("No image files found in the selection (only images can be filtered by altitude).") :
+          ""
       });
       return;
     }
@@ -152,13 +171,7 @@ export default class AltitudeFilterPanel extends React.Component {
       }
 
       exifr.parse(file, EXIF_OPTIONS).then(exif => {
-        let altitude = null;
-        if (exif && exif.GPSAltitude !== undefined && exif.GPSAltitude !== null){
-          altitude = exif.GPSAltitude;
-          if (exif.GPSAltitudeRef === 1){
-            altitude = -altitude;
-          }
-        }
+        const altitude = parseAltitude(exif);
         file._altitudeParsed = altitude;
         imageData.push({ file, altitude });
         doneOne();
@@ -227,14 +240,18 @@ export default class AltitudeFilterPanel extends React.Component {
     }
 
     if (!statistics){
-      return error ? (
+      return (
         <div className="altitude-filter-panel">
           <label className="col-sm-2 control-label">{_("Altitude")}</label>
           <div className="col-sm-10">
-            <p className="text-muted altitude-filter-warning">{error}</p>
+            {error ? (
+              <p className="text-muted altitude-filter-warning">{error}</p>
+            ) : (
+              <p className="text-muted">{_("Add drone images with GPS altitude in EXIF to use the altitude filter.")}</p>
+            )}
           </div>
         </div>
-      ) : null;
+      );
     }
 
     const totalImages = imageData.length;

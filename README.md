@@ -47,12 +47,14 @@ Copy this directory into WebODM’s persistent plugins path (typically `app/medi
 
 ## Usage
 
-1. Enable the plugin (see above).
-2. Open a project and start **New Task**.
-3. Add images (drag-and-drop or file picker).
-4. After EXIF is read, an **Altitude** row appears with a histogram and sliders.
-5. Adjust the range; the summary shows how many images will be uploaded vs excluded.
-6. Start processing — excluded files are removed from the upload queue before transfer.
+1. Enable the plugin under **Administration → Plugins** (it does nothing if disabled).
+2. Open a project and click **Select Images and GCP**, then choose your images.
+3. After files are added, the **New Task** options panel opens. Wait a moment for processing options to load.
+4. Scroll to the **Resize Images** section — the **Altitude** row appears **directly below** it (this is where WebODM renders upload plugins).
+5. After EXIF is read, you should see either a histogram with sliders or a short message (e.g. missing GPS altitude).
+6. Adjust the range, then click **Review** → **Start Processing**. Excluded images are removed from the upload queue before transfer.
+
+**Requirements for the histogram:** at least **two** images with **GPS altitude** in EXIF. Images without altitude are always kept. If you only see a text message, your images may lack GPS altitude metadata (common with some cameras or stripped EXIF).
 
 ## Development
 
