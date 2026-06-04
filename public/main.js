@@ -1,9 +1,21 @@
-PluginsAPI.Dashboard.addNewTaskPanelItem([
-    'altitude-filter/build/AltitudeFilterPanel.js',
-    'altitude-filter/build/AltitudeFilterPanel.css'
-], function(args, AltitudeFilterPanel){
+(function(){
+  function pluginPrefix(){
+    const scripts = document.getElementsByTagName('script');
+    for (let i = 0; i < scripts.length; i++){
+      const m = (scripts[i].src || '').match(/\/plugins\/([^/]+)\/main\.js(?:\?|$)/);
+      if (m) return m[1] + '/';
+    }
+    return '';
+  }
+
+  const prefix = pluginPrefix();
+  PluginsAPI.Dashboard.addNewTaskPanelItem([
+    prefix + 'build/AltitudeFilterPanel.js',
+    prefix + 'build/AltitudeFilterPanel.css'
+  ], function(args, AltitudeFilterPanel){
     return AltitudeFilterPanel;
-});
+  });
+})();
 
 (function(){
   if (!window.Dropzone) return;

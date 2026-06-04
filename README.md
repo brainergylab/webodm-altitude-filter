@@ -19,28 +19,31 @@ Compatible with [WebODM](https://github.com/OpenDroneMap/WebODM) **2.9.4** and l
 
 ## Installation
 
-The plugin directory name must be `altitude-filter` (matching `manifest.json` / Python module path).
+### Option 1: GitHub ZIP → WebODM upload (recommended)
 
-### Option 1: Load plugin ZIP (recommended)
-
-1. Zip the `altitude-filter` folder so the archive root contains that folder (same layout as [WebODM’s test plugin fixture](https://github.com/OpenDroneMap/WebODM/tree/master/app/fixtures)).
+1. Download this repository as a ZIP from GitHub (**Code → Download ZIP**).
 2. In WebODM, go to **Administration → Plugins**.
-3. Click **Load Plugin (.zip)** and upload the archive.
+3. Click **Load Plugin (.zip)** and upload that file unchanged.
+
+WebODM requires the archive to contain **exactly one** top-level folder with `manifest.json`, `plugin.py`, and `__init__.py` at its root — which matches the GitHub ZIP layout.
+
 4. Enable **Altitude Filter** in the plugin list.
 
-Prebuilt assets are in `altitude-filter/public/build/` so you do not need to run webpack before zipping.
+Prebuilt assets are in `public/build/`; you do not need to run webpack before uploading.
 
 ### Option 2: Symlink into WebODM `coreplugins`
 
+Use a folder name without spaces (e.g. `altitude-filter`):
+
 ```bash
-ln -s "$(pwd)/altitude-filter" /path/to/WebODM/coreplugins/altitude-filter
+ln -s "$(pwd)" /path/to/WebODM/coreplugins/altitude-filter
 ```
 
-Restart WebODM (or let it rescan plugins). Enable the plugin under **Administration → Plugins**.
+Restart WebODM if needed, then enable the plugin under **Administration → Plugins**.
 
-### Option 3: Persistent plugins directory
+### Option 3: Copy into WebODM media plugins
 
-Copy or symlink into WebODM’s media plugins path (typically `app/media/plugins/altitude-filter` inside your WebODM data volume). See [WebODM plugin paths](https://github.com/OpenDroneMap/WebODM/tree/master/app/plugins).
+Copy this directory into WebODM’s persistent plugins path (typically `app/media/plugins/<folder-name>/` inside your WebODM data volume).
 
 ## Usage
 
@@ -53,26 +56,27 @@ Copy or symlink into WebODM’s media plugins path (typically `app/media/plugins
 
 ## Development
 
-From `altitude-filter/public/`:
+From `public/`:
 
 ```bash
 npm install
 npx webpack --config webpack.config.js
 ```
 
-`webpack.config.js` looks for a WebODM root containing `webodm.sh` (sibling `WebODM/`, `../../../WebODM`, etc.). Adjust `webodmRoot` if your layout differs.
+`webpack.config.js` looks for a WebODM root containing `webodm.sh` (`../../WebODM`, `../../../WebODM`, etc.). Adjust paths if your layout differs.
 
 WebODM can also build JSX plugins on startup when `build_jsx_components()` is set in `plugin.py` and `public/package.json` exists.
 
 ### Layout
 
 ```
-altitude-filter/
-├── __init__.py
+├── __init__.py            # exports Plugin from plugin.py (required for upload installs)
 ├── manifest.json
-├── plugin.py              # PluginBase: main.js + AltitudeFilterPanel.jsx
+├── plugin.py
+├── LICENSE
+├── README.md
 └── public/
-    ├── main.js            # Dashboard panel + Dropzone upload hook
+    ├── main.js
     ├── AltitudeFilterPanel.jsx
     ├── AltitudeFilterPanel.scss
     ├── webpack.config.js

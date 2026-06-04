@@ -1,12 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-let webodmRoot = path.resolve(__dirname, "../../../");
+let webodmRoot = path.resolve(__dirname, "../../WebODM");
 if (!fs.existsSync(path.join(webodmRoot, "webodm.sh"))){
   webodmRoot = path.resolve(__dirname, "../../../WebODM");
 }
 if (!fs.existsSync(path.join(webodmRoot, "webodm.sh"))){
-  webodmRoot = path.resolve(__dirname, "../../../../WebODM");
+  webodmRoot = path.resolve(__dirname, "../../../");
 }
 if (!fs.existsSync(path.join(webodmRoot, "webodm.sh"))){
   throw new Error("Cannot find WebODM root (webodm.sh). Set webodmRoot in webpack.config.js.");
