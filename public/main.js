@@ -19,9 +19,10 @@
     return;
   }
 
+  // CSS is loaded via plugin.py include_css_files() (<link> in page head).
+  // Do not load .css through SystemJS — it often 404s or fails for uploaded plugins.
   PluginsAPI.Dashboard.addNewTaskPanelItem([
-    prefix + 'build/AltitudeFilterPanel.js',
-    prefix + 'build/AltitudeFilterPanel.css'
+    prefix + 'build/AltitudeFilterPanel.js'
   ], function(args, AltitudeFilterPanel){
     return AltitudeFilterPanel;
   });
