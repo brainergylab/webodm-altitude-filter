@@ -1,0 +1,13 @@
+{
+	"name": "Altitude Filter",
+	"webodmMinVersion": "2.9.4",
+	"description": "Filter uploaded images by GPS altitude using an interactive histogram with min/max sliders.",
+	"version": "1.0.0",
+	"author": "Brainergy Lab",
+	"email": "",
+	"repository": "https://github.com/brainergylab/webodm-altitute-filter",
+	"tags": ["upload", "altitude", "gps", "exif", "filter", "histogram"],
+	"homepage": "https://github.com/brainergylab/webodm-altitute-filter",
+	"experimental": false,
+	"deprecated": false
+}

@@ -1,0 +1,5 @@
+# Dependencies (rebuilt by WebODM or `npm install` in public/)
+altitude-filter/public/node_modules/
+
+# Optional local webpack output (committed builds are included for zip installs)
+# altitude-filter/public/build/
