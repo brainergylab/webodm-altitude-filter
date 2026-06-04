@@ -61,6 +61,7 @@ Copy this directory into WebODM’s persistent plugins path (typically `app/medi
 | Symptom | Fix |
 |---------|-----|
 | Console: `define is not a function` when loading `AltitudeFilterPanel.js` | Rebuild `public/build/` with the repo’s `webpack.config.js` (named AMD output). Do not use anonymous `define(() => …)` bundles from older webpack settings. |
+| Console: `Fetch error: 404` for `/plugins/PropTypes` or `/plugins/React` | Rebuild with `externalsType: 'var'` (not `'amd'`). AMD dependency lists make SystemJS request those paths as files. |
 | No **Altitude** row at all | Enable the plugin, hard-refresh the page, confirm `main.js` loads under `/plugins/<folder>/main.js`. |
 | Message instead of histogram | Need ≥2 images with GPS altitude in EXIF. |
 

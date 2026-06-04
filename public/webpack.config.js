@@ -25,7 +25,7 @@ module.exports = {
   output: {
     path: path.join(__dirname, './build'),
     filename: "[name].js",
-    // Named AMD bundle — compatible with WebODM's SystemJS 0.21 (anonymous define() breaks)
+    // Named AMD, empty deps array — SystemJS must not fetch React/PropTypes as /plugins/* URLs
     library: {
       type: 'amd',
       name: '[name]'
@@ -82,14 +82,15 @@ module.exports = {
     modules: [path.join(webodmRoot, 'node_modules')]
   },
 
-  externalsType: 'amd',
+  // Use globals already on the page (WebODM main bundle). Do not use externalsType
+  // 'amd' — that makes SystemJS fetch /plugins/React and /plugins/PropTypes (404).
+  externalsType: 'var',
   externals: {
     "jquery": "jQuery",
     "SystemJS": "SystemJS",
     "PluginsAPI": "PluginsAPI",
     "react-dom": "ReactDOM",
-    "react": "React",
-    "prop-types": "PropTypes"
+    "react": "React"
   },
 
   watchOptions: {
