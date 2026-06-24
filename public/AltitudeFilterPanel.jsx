@@ -400,6 +400,7 @@ export default class AltitudeFilterPanel extends React.Component {
       if (file.type && file.type.indexOf("image") !== 0) {
         includedCount++;
         includedFileNames.add(file.name);
+        file._altitudeExcluded = false;
         return;
       }
       
@@ -410,8 +411,10 @@ export default class AltitudeFilterPanel extends React.Component {
       if (this.isFileIncluded(file)) {
         includedCount++;
         includedFileNames.add(file.name);
+        file._altitudeExcluded = false;
       } else {
         excludedCount++;
+        file._altitudeExcluded = true;
       }
     });
 
