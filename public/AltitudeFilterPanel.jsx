@@ -130,7 +130,7 @@ export default class AltitudeFilterPanel extends React.Component {
     const parsed = this.parsedFiles.get(file.name);
     if (!parsed) return true; // Keep unparsed images
     
-    if (parsed.isPanel && this.isRadiometricCalibrationEnabled()) return true; // Keep panels
+    if (parsed.isPanel) return true; // Always keep panel/calibration images
 
     if (parsed.altitude === null || parsed.altitude === undefined) return true; // Keep images without altitude
 
@@ -377,7 +377,7 @@ export default class AltitudeFilterPanel extends React.Component {
       }
       
       const parsed = this.parsedFiles.get(file.name);
-      const isPanel = parsed && parsed.isPanel && this.isRadiometricCalibrationEnabled();
+      const isPanel = parsed && parsed.isPanel;
       if (isPanel) panelCount++;
       
       if (this.isFileIncluded(file)) {
@@ -462,9 +462,9 @@ export default class AltitudeFilterPanel extends React.Component {
             <div className="filter-summary">
               {this.state.includedCount} of {this.state.totalCount} files will be uploaded ({this.state.excludedCount} excluded).
               {this.state.panelCount > 0 && (
-                <span className="calibration-note">
-                  {this.state.panelCount} calibration panel image(s) always included.
-                </span>
+                <div style={{ color: '#28a745', fontWeight: 'bold' }}>
+                  {this.state.panelCount} calibration panel image(s) found and excluded from the filter.
+                </div>
               )}
             </div>
             
