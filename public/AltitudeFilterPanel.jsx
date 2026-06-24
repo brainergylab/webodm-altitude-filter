@@ -195,41 +195,47 @@ export default class AltitudeFilterPanel extends React.Component {
     
     // First, try fast regex on first 256KB for XMP tags
     try {
-      const slice = file.slice(0, 262144);
-      const text = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = () => resolve("");
-        reader.readAsText(slice);
-      });
-      
-      if (text) {
-        const relAltMatch = text.match(/drone-dji:RelativeAltitude=["']?([+-]?\d+\.?\d*)/i) || 
-                            text.match(/<drone-dji:RelativeAltitude>([+-]?\d+\.?\d*)<\/drone-dji:RelativeAltitude>/i);
-        if (relAltMatch) metadata.altitude = parseFloat(relAltMatch[1]);
-        
-        const calPicMatch = text.match(/Camera:CalibrationPicture=["']?(\d+)/i) || 
-                            text.match(/<Camera:CalibrationPicture>(\d+)<\/Camera:CalibrationPicture>/i);
-        const panelSerialMatch = text.match(/Camera:PanelSerial=["']?([^"'\s>]+)/i) || 
-                                 text.match(/<Camera:PanelSerial>([^<]+)<\/Camera:PanelSerial>/i);
-        
-        if ((calPicMatch && parseInt(calPicMatch[1], 10) === 2) || (panelSerialMatch && panelSerialMatch[1].trim() !== "")) {
-          metadata.isPanel = true;
-        }
-      }
-    } catch (e) {
-      console.warn("Fast XMP parse failed", e);
-    }
+        const sliceStart = file.slice(0, 256 * 1024);
+        const sliceEnd = file.size > 256 * 1024 ? file.slice(file.size - 256 * 1024) : new Blob([]);
 
-    // Next, run exifr
-    try {
-      const exif = await exifr.parse(file, {
-        gps: true,
-        xmp: true,
-        ifd0: false,
-        ifd1: false,
-        interop: false
-      });
+        const readSlice = (s) => new Promise(resolve => {
+          if (s.size === 0) return resolve("");
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = () => resolve("");
+          reader.readAsText(s);
+        });
+
+        const [textStart, textEnd] = await Promise.all([readSlice(sliceStart), readSlice(sliceEnd)]);
+        const text = textStart + " " + textEnd;
+        
+        if (text) {
+          const relAltMatch = text.match(/drone-dji:RelativeAltitude=["']?([+-]?\d+\.?\d*)/i) || 
+                              text.match(/<drone-dji:RelativeAltitude>([+-]?\d+\.?\d*)<\/drone-dji:RelativeAltitude>/i);
+          if (relAltMatch) metadata.altitude = parseFloat(relAltMatch[1]);
+          
+          const calPicMatch = text.match(/Camera:CalibrationPicture=["']?(\d+)/i) || 
+                              text.match(/<Camera:CalibrationPicture>(\d+)<\/Camera:CalibrationPicture>/i);
+          const hasPanelSerial = /Camera:PanelSerial/i.test(text);
+          
+          if ((calPicMatch && parseInt(calPicMatch[1], 10) === 2) || hasPanelSerial) {
+            metadata.isPanel = true;
+          }
+        }
+      } catch (e) {
+        console.warn("Fast XMP parse failed", e);
+      }
+
+      // Next, run exifr
+      try {
+        const exif = await exifr.parse(file, {
+          gps: true,
+          xmp: true,
+          makerNote: true,
+          ifd0: true,
+          ifd1: false,
+          interop: false
+        });
 
       if (exif) {
         metadata.hasExif = true;
