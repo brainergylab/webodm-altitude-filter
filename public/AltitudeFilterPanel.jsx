@@ -379,9 +379,12 @@ export default class AltitudeFilterPanel extends React.Component {
   }
 
   handleUpdate = ({ min, max }) => {
-    this.setState({ min, max }, () => {
+    this.setState({ min, max });
+    
+    if (this.updateTimeout) clearTimeout(this.updateTimeout);
+    this.updateTimeout = setTimeout(() => {
       this.updateCountsAndMap();
-    });
+    }, 400);
   }
 
   updateCountsAndMap() {
