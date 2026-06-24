@@ -344,7 +344,7 @@ export default class AltitudeFilterPanel extends React.Component {
     let histMin = min - padding;
     let histMax = max + padding;
     
-    const binCount = 20;
+    const binCount = 100;
     const counts = Array(binCount).fill(0);
     const bins = [];
     let step = (histMax - histMin) / binCount;
