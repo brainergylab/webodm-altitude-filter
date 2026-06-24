@@ -396,11 +396,12 @@ export default class AltitudeFilterPanel extends React.Component {
     let panelCount = 0;
     const includedFileNames = new Set();
     
+    const excludedFileNames = new Set();
+    
     files.forEach(file => {
       if (file.type && file.type.indexOf("image") !== 0) {
         includedCount++;
         includedFileNames.add(file.name);
-        file._altitudeExcluded = false;
         return;
       }
       
@@ -411,12 +412,13 @@ export default class AltitudeFilterPanel extends React.Component {
       if (this.isFileIncluded(file)) {
         includedCount++;
         includedFileNames.add(file.name);
-        file._altitudeExcluded = false;
       } else {
         excludedCount++;
-        file._altitudeExcluded = true;
+        excludedFileNames.add(file.name);
       }
     });
+
+    window.AltitudeFilterExcludedFiles = excludedFileNames;
 
     this.setState({
       includedCount,
