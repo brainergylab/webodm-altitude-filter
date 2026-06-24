@@ -1,5 +1,5 @@
 {
-  "name": "WebODM Altitude Filter",
+  "name": "Altitude Filter",
   "webodmMinVersion": "2.9.4",
   "description": "Altitude Filter Plugin for WebODM",
   "version": "1.1.11",

@@ -1,0 +1,53 @@
+name: Build and Package Plugin
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Plugin
+      uses: actions/checkout@v7
+      with:
+        path: plugin
+
+    - name: Checkout WebODM
+      uses: actions/checkout@v7
+      with:
+        repository: OpenDroneMap/WebODM
+        path: WebODM
+
+    - name: Use Node.js
+      uses: actions/setup-node@v6
+
+
+    - name: Run Tests
+      run: |
+        cd plugin
+        node test-exif.js
+
+    - name: Install dependencies and build
+      run: |
+        cd WebODM
+        npm install
+        cd ../plugin/public
+        npm install
+        npm run build
+
+    - name: Package plugin
+      run: |
+        cd plugin
+        mkdir -p package/webodm-altitude-filter-plugin
+        cp -r public plugin.py __init__.py manifest.json LICENSE README.md package/webodm-altitude-filter-plugin/
+        rm -rf package/webodm-altitude-filter-plugin/public/node_modules
+
+    - name: Upload plugin artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: webodm-altitude-filter
+        path: plugin/package/
