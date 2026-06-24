@@ -31,15 +31,19 @@
     return null;
   }
 
-  function applyBeforeUpload(dz){
+  function applyBeforeUpload(dz, projectId){
     if (!window.AltitudeFilterExcludedFiles) return true;
     
-    const excluded = dz.files.filter(f => window.AltitudeFilterExcludedFiles.has(f.name));
+    // Fallback if projectId not passed
+    const excludedSet = projectId ? window.AltitudeFilterExcludedFiles[projectId] : window.AltitudeFilterExcludedFiles;
+    if (!excludedSet) return true;
+    
+    const excluded = dz.files.filter(f => excludedSet.has(f.name));
     if (!excluded.length) return true;
 
     const imagesAfter = dz.files.filter(f => {
       const isImg = (f.type && f.type.indexOf('image') === 0) || /\.(jpe?g|png|tif{1,2}|dng|nef|raw)$/i.test(f.name);
-      return isImg && !window.AltitudeFilterExcludedFiles.has(f.name);
+      return isImg && !excludedSet.has(f.name);
     });
 
     if (imagesAfter.length === 0){

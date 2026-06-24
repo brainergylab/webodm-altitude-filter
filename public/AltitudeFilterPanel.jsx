@@ -86,31 +86,30 @@ export default class AltitudeFilterPanel extends React.Component {
   }
 
   hookDropzone() {
-    if (this.dzOriginalProcessQueue) return;
-
     if (!this.projectListItemInstance) {
       this.findReactInstances();
     }
     
     if (this.projectListItemInstance && this.projectListItemInstance.dz) {
-      this.dzInstance = this.projectListItemInstance.dz;
-      if (!this.dzInstance || this.dzOriginalProcessQueue) return;
+      const dz = this.projectListItemInstance.dz;
+      if (dz._altitudeFilterHooked) return;
 
-      this.dzOriginalProcessQueue = this.dzInstance.processQueue.bind(this.dzInstance);
+      const origProcessQueue = dz.processQueue;
+      dz._altitudeFilterHooked = true;
       
-      this.dzInstance.processQueue = () => {
-        if (!this.dzInstance.options.autoProcessQueue && this.dzInstance._taskInfo && this.dzInstance._taskInfo.id) {
+      const projectId = this.props.projectId || this.projectListItemInstance.state?.data?.id;
+      
+      dz.processQueue = function() {
+        if (this.options.autoProcessQueue === false && this._taskInfo && this._taskInfo.id) {
           // Task has been created and we are about to upload files
           if (window.AltitudeFilterApplyBeforeUpload && window.AltitudeFilterAbortUpload) {
-            if (!window.AltitudeFilterApplyBeforeUpload(this.dzInstance)) {
-              window.AltitudeFilterAbortUpload(this.dzInstance);
+            if (!window.AltitudeFilterApplyBeforeUpload(this, projectId)) {
+              window.AltitudeFilterAbortUpload(this);
               return;
             }
           }
-          this.dzOriginalProcessQueue();
-        } else {
-          this.dzOriginalProcessQueue();
         }
+        return origProcessQueue.apply(this, arguments);
       };
       return;
     }
@@ -226,7 +225,13 @@ export default class AltitudeFilterPanel extends React.Component {
         console.warn("Fast XMP parse failed", e);
       }
 
-      // Next, run exifr
+      // If the fast text regex successfully got everything we needed, skip exifr completely!
+      if (metadata.altitude !== null || metadata.isPanel) {
+        metadata.hasExif = true;
+        return metadata;
+      }
+
+      // Next, run exifr fallback for standard GPS IFD tags
       try {
         const exif = await exifr.parse(file, {
           gps: true,
@@ -395,7 +400,13 @@ export default class AltitudeFilterPanel extends React.Component {
       }
     });
 
-    window.AltitudeFilterExcludedFiles = excludedFileNames;
+    const projectId = this.props.projectId || this.projectListItemInstance?.state?.data?.id;
+    if (projectId) {
+      if (!window.AltitudeFilterExcludedFiles) window.AltitudeFilterExcludedFiles = {};
+      window.AltitudeFilterExcludedFiles[projectId] = excludedFileNames;
+    } else {
+      window.AltitudeFilterExcludedFiles = excludedFileNames;
+    }
 
     this.setState({
       includedCount,
