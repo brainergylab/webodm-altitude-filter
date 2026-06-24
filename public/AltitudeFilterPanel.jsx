@@ -53,10 +53,9 @@ export default class AltitudeFilterPanel extends React.Component {
     if (this.updateTimeout) clearTimeout(this.updateTimeout);
     if (this.hookTimeout) clearTimeout(this.hookTimeout);
     
-    // Restore original processQueue if we unmount
-    if (this.dzInstance && this.dzOriginalProcessQueue) {
-      this.dzInstance.processQueue = this.dzOriginalProcessQueue;
-    }
+    // We intentionally DO NOT restore this.dzInstance.processQueue here!
+    // WebODM sets editing:false (unmounting this component) BEFORE the AJAX
+    // request finishes and calls processQueue. If we restore it, we lose the hook!
   }
 
   findReactInstances() {
@@ -102,7 +101,13 @@ export default class AltitudeFilterPanel extends React.Component {
       this.dzInstance.processQueue = () => {
         if (!this.dzInstance.options.autoProcessQueue && this.dzInstance._taskInfo && this.dzInstance._taskInfo.id) {
           // Task has been created and we are about to upload files
-          this.filterAndUpload();
+          if (window.AltitudeFilterApplyBeforeUpload && window.AltitudeFilterAbortUpload) {
+            if (!window.AltitudeFilterApplyBeforeUpload(this.dzInstance)) {
+              window.AltitudeFilterAbortUpload(this.dzInstance);
+              return;
+            }
+          }
+          this.dzOriginalProcessQueue();
         } else {
           this.dzOriginalProcessQueue();
         }
@@ -117,59 +122,6 @@ export default class AltitudeFilterPanel extends React.Component {
         this.hookDropzone();
       }, 100);
     }
-  }
-
-  filterAndUpload() {
-    const allFiles = this.projectListItemInstance.state.upload.files;
-    const remainingFiles = [];
-    const excludedFiles = [];
-
-    allFiles.forEach(file => {
-      const isIncluded = this.isFileIncluded(file);
-      if (isIncluded) {
-        remainingFiles.push(file);
-      } else {
-        excludedFiles.push(file);
-      }
-    });
-
-    const hasImages = remainingFiles.some(f => f.type && f.type.indexOf("image") === 0);
-
-    if (!hasImages) {
-      alert("Altitude Filter: No image files remain in the upload queue. Upload blocked.");
-      
-      this.projectListItemInstance.setUploadState({ 
-        uploading: false, 
-        error: "Altitude Filter: No images left to upload." 
-      });
-      
-      // Cancel task on server
-      if (this.dzInstance._taskInfo && this.dzInstance._taskInfo.id !== undefined) {
-        $.ajax({
-          url: `/api/projects/${this.projectListItemInstance.state.data.id}/tasks/${this.dzInstance._taskInfo.id}/remove/`,
-          contentType: 'application/json',
-          dataType: 'json',
-          type: 'POST'
-        });
-      }
-      return;
-    }
-
-    // Remove excluded files
-    excludedFiles.forEach(file => {
-      this.dzInstance.removeFile(file);
-    });
-
-    // Update ProjectListItem state
-    const remainingBytes = remainingFiles.reduce((acc, f) => acc + f.size, 0);
-    this.projectListItemInstance.setUploadState({
-      files: remainingFiles,
-      totalCount: remainingFiles.length,
-      totalBytes: remainingBytes
-    });
-
-    // Proceed with the actual upload
-    this.dzOriginalProcessQueue();
   }
 
   isFileIncluded(file) {

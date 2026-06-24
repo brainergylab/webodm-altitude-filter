@@ -90,7 +90,10 @@
     }
   }
 
-  // Hook Dropzone prototype to intercept the upload queue
+  window.AltitudeFilterApplyBeforeUpload = applyBeforeUpload;
+  window.AltitudeFilterAbortUpload = abortUpload;
+
+  // Hook Dropzone prototype to intercept the upload queue if it's global
   if (window.Dropzone) {
     const origProcessQueue = window.Dropzone.prototype.processQueue;
     window.Dropzone.prototype.processQueue = function(){
