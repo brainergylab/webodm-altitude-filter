@@ -50,6 +50,10 @@ export default class AltitudeFilterPanel extends React.Component {
   }
 
   componentWillUnmount() {
+    if (this.updateTimeout) clearTimeout(this.updateTimeout);
+    if (this.hookTimeout) clearTimeout(this.hookTimeout);
+    
+    // Restore original processQueue if we unmount
     if (this.dzInstance && this.dzOriginalProcessQueue) {
       this.dzInstance.processQueue = this.dzOriginalProcessQueue;
     }
@@ -83,21 +87,36 @@ export default class AltitudeFilterPanel extends React.Component {
   }
 
   hookDropzone() {
-    if (!this.projectListItemInstance) return;
-    
-    this.dzInstance = this.projectListItemInstance.dz;
-    if (!this.dzInstance || this.dzOriginalProcessQueue) return;
+    if (this.dzOriginalProcessQueue) return;
 
-    this.dzOriginalProcessQueue = this.dzInstance.processQueue.bind(this.dzInstance);
+    if (!this.projectListItemInstance) {
+      this.findReactInstances();
+    }
     
-    this.dzInstance.processQueue = () => {
-      if (!this.dzInstance.options.autoProcessQueue && this.dzInstance._taskInfo && this.dzInstance._taskInfo.id) {
-        // Task has been created and we are about to upload files
-        this.filterAndUpload();
-      } else {
-        this.dzOriginalProcessQueue();
-      }
-    };
+    if (this.projectListItemInstance && this.projectListItemInstance.dz) {
+      this.dzInstance = this.projectListItemInstance.dz;
+      if (!this.dzInstance || this.dzOriginalProcessQueue) return;
+
+      this.dzOriginalProcessQueue = this.dzInstance.processQueue.bind(this.dzInstance);
+      
+      this.dzInstance.processQueue = () => {
+        if (!this.dzInstance.options.autoProcessQueue && this.dzInstance._taskInfo && this.dzInstance._taskInfo.id) {
+          // Task has been created and we are about to upload files
+          this.filterAndUpload();
+        } else {
+          this.dzOriginalProcessQueue();
+        }
+      };
+      return;
+    }
+
+    // If dz is not yet initialized (due to React bottom-up mounting), retry shortly
+    if (!this.hookTimeout) {
+      this.hookTimeout = setTimeout(() => {
+        this.hookTimeout = null;
+        this.hookDropzone();
+      }, 100);
+    }
   }
 
   filterAndUpload() {
