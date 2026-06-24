@@ -1,0 +1,7 @@
+{
+  "name": "altitude-filter",
+  "version": "1.0.0",
+  "description": "Filter images by GPS altitude before processing",
+  "main": "main.js",
+  "license": "AGPL-3.0-or-later"
+}
