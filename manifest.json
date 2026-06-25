@@ -2,7 +2,7 @@
   "name": "Altitude Filter",
   "webodmMinVersion": "2.9.4",
   "description": "Altitude Filter Plugin for WebODM",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "author": "Brainergy Lab",
   "email": "",
   "repository": "https://github.com/WebODM/webodm-altitude-filter",

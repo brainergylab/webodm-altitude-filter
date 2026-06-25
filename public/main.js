@@ -34,9 +34,18 @@
   function applyBeforeUpload(dz, projectId){
     if (!window.AltitudeFilterExcludedFiles) return true;
     
-    // Fallback if projectId not passed
+    if (!projectId) {
+      const pli = findProjectListItem(dz.element);
+      if (pli && pli.state && pli.state.data) {
+        projectId = pli.state.data.id;
+      }
+    }
+    
+    // Fallback if projectId not passed or found
     const excludedSet = projectId ? window.AltitudeFilterExcludedFiles[projectId] : window.AltitudeFilterExcludedFiles;
-    if (!excludedSet) return true;
+    
+    // If it's still an object without the projectId (e.g., race condition fallback failed), or missing
+    if (!excludedSet || typeof excludedSet.has !== 'function') return true;
     
     const excluded = dz.files.filter(f => excludedSet.has(f.name));
     if (!excluded.length) return true;
