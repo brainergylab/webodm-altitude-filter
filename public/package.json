@@ -4,6 +4,7 @@
   "description": "Altitude Filter Plugin for WebODM",
   "private": true,
   "scripts": {
+    "test": "node test-exif.js",
     "build": "webpack --mode production"
   },
   "devDependencies": {
